@@ -15,7 +15,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 PDF_PATH = "docs.pdf"
 INDEX_PATH = "faiss_index"
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 
  # Embedding Wrapper
