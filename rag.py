@@ -34,15 +34,13 @@ class MiniLMEmbeddings(Embeddings):
     def embed_query(self, text: str) -> list[float]:
         return self.embed_documents([text])[0]
 
-
-# ─── GLOBALS ─────────────────────────────────────────────────
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="mps")
+model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu"
+                                                                             "")
 embeddings = MiniLMEmbeddings(model)
 
 
-# ─── HELPERS ──────────────────────────────────────────────────
+    # FAISS Helpers
 def set_nprobe(index, nprobe: int = 10):
-    """Recursively walk the FAISS index wrapper chain to find the IVF index and set nprobe."""
     if hasattr(index, 'sub_index'):
         set_nprobe(index.sub_index, nprobe)
     elif hasattr(index, 'nprobe'):
@@ -52,7 +50,7 @@ def set_nprobe(index, nprobe: int = 10):
         print("Warning: could not find an IVF index to set nprobe on.")
 
 
-# ─── 1. LOAD & CHUNK ─────────────────────────────────────────
+    # Load and split into chunks
 def load_and_chunk(pdf_path: str):
     loader = PyMuPDFLoader(pdf_path)
     raw_docs = loader.load()
@@ -67,7 +65,8 @@ def load_and_chunk(pdf_path: str):
     return chunks
 
 
-# ─── 2. EMBED ─────────────────────────────────────────────────
+    # Create Embeddings
+
 def create_embeddings(chunks: list):
     texts = [chunk.page_content for chunk in chunks]
     embeddings_array = model.encode(
@@ -80,10 +79,8 @@ def create_embeddings(chunks: list):
     return embeddings_array
 
 
-# ─── 3. BUILD FAISS INDEX ─────────────────────────────────────
-# We wrap IndexIVFFlat inside IndexIDMap.
-# IndexIDMap supports reconstruct() natively — no DirectMap needed.
-# This survives save/load cleanly, which DirectMap does NOT.
+    # Build FAISS Index
+
 def build_faiss_index(embeddings_array: np.ndarray):
     faiss.omp_set_num_threads(multiprocessing.cpu_count())
 
@@ -111,7 +108,8 @@ def build_faiss_index(embeddings_array: np.ndarray):
     return index
 
 
-# ─── 4. BUILD VECTORSTORE ─────────────────────────────────────
+    # Build vectorstore
+
 def build_vectorstore(index, chunks):
     docstore_dict = {str(i): chunks[i] for i in range(len(chunks))}
     index_to_docstore_id = {i: str(i) for i in range(len(chunks))}
@@ -124,8 +122,8 @@ def build_vectorstore(index, chunks):
     )
     return vectorstore
 
+    #Save and load faiss index
 
-# ─── 5. SAVE / LOAD INDEX ─────────────────────────────────────
 def get_vectorstore(pdf_path: str, index_path: str):
     if os.path.exists(index_path):
         print(f"Loading existing index from '{index_path}'...")
@@ -149,8 +147,8 @@ def get_vectorstore(pdf_path: str, index_path: str):
 
     return vectorstore
 
+    # RAG Chain
 
-# ─── 6. RAG CHAIN ─────────────────────────────────────────────
 def build_rag_chain(vectorstore):
     retriever = vectorstore.as_retriever(
         search_type="similarity",
@@ -158,7 +156,7 @@ def build_rag_chain(vectorstore):
     )
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Answer using only the context below.\n\nContext: {context}"),
+        ("system", "Answer using  the context below. Use your additional knowledge if necessary\n\nContext: {context}"),
         ("human", "{question}")
     ])
 
@@ -189,7 +187,7 @@ def main():
     vectorstore = get_vectorstore(PDF_PATH, INDEX_PATH)
     rag_chain = build_rag_chain(vectorstore)
 
-    print("\n─── RAG ready. Type your question (or 'quit' to exit) ───\n")
+    print("\n RAG ready. Type your question (or 'quit' to exit) \n")
     while True:
         question = input("You: ").strip()
         if question.lower() in ("quit", "exit", "q"):
