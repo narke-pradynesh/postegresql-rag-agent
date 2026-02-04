@@ -1,6 +1,4 @@
-import numpy as np
 import streamlit as st
-import pandas as pd
 from rag import load_rag
 
 st.set_page_config(
