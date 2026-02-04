@@ -194,7 +194,7 @@ def main():
         vectorstore = get_vectorstore(PDF_PATH, INDEX_PATH)
         rag_chain = build_rag_chain(vectorstore)
 
-        print("\n✓ RAG ready. Type your question (or 'quit' to exit)\n")
+        print("\n RAG ready. Type your question (or 'quit' to exit)\n")
         while True:
             question = input("You: ").strip()
             if question.lower() in ("quit", "exit", "q"):
@@ -209,7 +209,7 @@ def main():
                     print(chunk, end="", flush=True)
                 print("\n")
             except Exception as e:
-                print(f"\n⚠ Error processing question: {e}\n")
+                print(f"\n Error processing question: {e}\n")
                 
     except Exception as e:
         print(f"✗ Fatal error: {e}")
